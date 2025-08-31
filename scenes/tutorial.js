@@ -8,22 +8,26 @@ export class TutorialView {
     this.switchScene = switchScene;
     this.previousView = previousView;
     this.lines = [
-      'Press ESC to return',
-      'Press ENTER to restart',
-      'Press T in game for this help',
+      'How to Play',
+      '',
+      'Goal: land the spacecraft gently on the Moon.',
       '',
       '## Arrow Keys',
-      '- LEFT: Rotate left',
-      '- RIGHT: Rotate right',
-      '- UP: Increase throttle',
-      '- DOWN: Decrease throttle',
+      '- LEFT/RIGHT: Rotate craft',
+      '- UP: Increase thrust (Shift for +10%)',
+      '- DOWN: Decrease thrust (Shift for -10%)',
       '',
-      '## Zoom & Focus',
-      '- PLUS: Zoom in',
-      '- MINUS: Zoom out',
-      '- SPACE: Toggle focus',
+      '## NumPad',
+      '- 1: Control main craft',
+      '- 2: Control lander',
+      '- 0: Dock or undock',
       '',
-      'Press ESC to return'
+      '## Zoom & View',
+      '- Mouse wheel or +/-: Zoom in/out',
+      '- SPACE: Toggle camera focus',
+      '',
+      'Press T in game for this help',
+      'ESC: return, ENTER: restart'
     ];
   }
 
