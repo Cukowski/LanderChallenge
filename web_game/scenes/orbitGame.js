@@ -1,8 +1,7 @@
 import { GameOver } from './gameOver.js';
 import { TutorialView } from './tutorial.js';
-// import { Body } from '../core/body.js';
-// import { Spacecraft } from '../core/spacecraft.js';
-// import { Mountain } from '../core/mountain.js';
+import { Body } from '../core/body.js';
+import { Spacecraft } from '../core/spacecraft.js';
 
 export class OrbitGame {
   constructor(canvas, ctx, switchScene, level = 1) {
@@ -15,8 +14,9 @@ export class OrbitGame {
     this.paused = false;
     this.gameRunning = true;
     this.simTime = 0;
-    this.sim_dt = 0.1;
+    this.sim_dt = 0.1; // simulation step in seconds
     this.timeFactor = 1.0;
+    this.accumulator = 0;
 
     // Star background
     this.stars = Array.from({ length: 100 }, () => ({
@@ -26,42 +26,38 @@ export class OrbitGame {
       speed: 0.005 + Math.random() * 0.01
     }));
 
-    // Game entities (placeholders)
-    this.bodyList = [];   // You'll need to port Body class
-    this.spriteList = []; // Manual sprite management for now
-
+    // Game entities
+    this.bodyList = [];
+    this.spriteList = [];
     this.showCrashed = false;
 
-    // Placeholder Moon body
-    this.planet = {
-      radius: 1737400,
-      mass: 7.34767309e22,
-      name: 'Moon',
-      scaleFactor: 0.25 * Math.min(canvas.width, canvas.height) / 1737400,
-      color: 'gray'
-    };
+    // Moon body
+    this.planet = new Body(this);
+    this.planet.radius = 1737400; // meters
+    this.planet.mass = 7.34767309e22; // kg
+    this.planet.name = 'Moon';
+    this.planet.color = 'gray';
+    this.planet.scaleFactor = 0.25 * Math.min(canvas.width, canvas.height) / this.planet.radius;
     this.reference = this.planet;
 
-    // TODO: instantiate Spacecraft, Lander, etc.
-    // this.spacecraft = new Spacecraft("craft_01.png", 0.1, this);
-    // this.spacecraft.y = this.planet.radius + 300000;
-    // this.spacecraft.u = Math.sqrt(Body.G * this.planet.mass / this.spacecraft.y);
-    // this.spacecraft.scaleFactor = 10 * this.planet.scaleFactor;
+    // Spacecraft
+    this.spacecraft = new Spacecraft('assets/craft_01.png', this);
+    this.spacecraft.mass = 15000;
+    this.spacecraft.y = this.planet.radius + 300000; // 300 km altitude
+    this.spacecraft.u = Math.sqrt(Body.G * this.planet.mass / this.spacecraft.y);
+    this.spacecraft.color = 'white';
 
-    // this.bodyList.push(this.planet, this.spacecraft);
-
-    // Level setup
+    // Level setup placeholders
     if (this.level === 2) this.setLevel2();
     if (this.level === 3) this.setLevel3();
   }
 
-  setLevel2() {
-    // Placeholder: define lander and modify control craft
+  scaleFactor() {
+    return this.reference.scaleFactor;
   }
 
-  setLevel3() {
-    // Placeholder
-  }
+  setLevel2() {}
+  setLevel3() {}
 
   update(deltaTime) {
     if (this.paused || !this.gameRunning) return;
@@ -75,11 +71,22 @@ export class OrbitGame {
       }
     });
 
-    // Update physics simulation
-    this.simTime += deltaTime * this.timeFactor;
+    // Physics steps
+    this.accumulator += deltaTime * this.timeFactor;
+    while (this.accumulator >= this.sim_dt) {
+      for (const body of this.bodyList) {
+        body.updatePhysics(this.sim_dt);
+      }
+      this.accumulator -= this.sim_dt;
+      this.simTime += this.sim_dt;
+    }
 
-    // TODO: run physics steps for all bodies
-    // this.bodyList.forEach(body => body.updatePhysics(dt));
+    // crash detection
+    const r = Math.sqrt(this.spacecraft.x ** 2 + this.spacecraft.y ** 2);
+    if (r <= this.planet.radius && this.gameRunning) {
+      this.gameRunning = false;
+      this.triggerGameOver();
+    }
   }
 
   render() {
@@ -89,7 +96,7 @@ export class OrbitGame {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw twinkling stars
+    // Draw stars
     this.stars.forEach(star => {
       ctx.beginPath();
       ctx.globalAlpha = star.alpha;
@@ -99,7 +106,12 @@ export class OrbitGame {
     });
     ctx.globalAlpha = 1;
 
-    // HUD (top-left info)
+    // Draw bodies
+    for (const body of this.bodyList) {
+      body.draw(ctx);
+    }
+
+    // HUD
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.textAlign = 'left';
@@ -117,12 +129,14 @@ export class OrbitGame {
     ctx.fillText(`Reference: ${this.reference.name}`, xOffset, yOffset);
     yOffset += lineHeight;
     ctx.fillText(`Level: ${this.level}`, xOffset, yOffset);
+    yOffset += lineHeight;
+    ctx.fillText(`Throttle: ${(this.spacecraft.throttle*100).toFixed(0)}%`, xOffset, yOffset);
     ctx.restore();
 
     // Instructions
     ctx.fillStyle = 'white';
     ctx.font = '16px Courier New';
-    ctx.fillText('Press T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
+    ctx.fillText('Arrows steer/throttle, +/- zoom, Space focus, T help, ESC quit', xOffset, canvas.height - yOffset);
 
     if (this.showCrashed) {
       ctx.font = '40px Courier New';
@@ -133,6 +147,18 @@ export class OrbitGame {
 
   onKeyPress(e) {
     switch (e.code) {
+      case 'ArrowLeft':
+        this.spacecraft.rotateDir = -1;
+        break;
+      case 'ArrowRight':
+        this.spacecraft.rotateDir = 1;
+        break;
+      case 'ArrowUp':
+        this.spacecraft.changeThrottle(0.1);
+        break;
+      case 'ArrowDown':
+        this.spacecraft.changeThrottle(-0.1);
+        break;
       case 'KeyT':
         this.paused = true;
         this.switchScene(new TutorialView(this.canvas, this.ctx, this.switchScene, this));
@@ -147,6 +173,26 @@ export class OrbitGame {
       case 'NumpadSubtract':
         this.timeFactor = Math.max(0.1, this.timeFactor / 1.1);
         break;
+      case 'Equal':
+        this.reference.scaleFactor *= 1.2;
+        break;
+      case 'Minus':
+        this.reference.scaleFactor /= 1.2;
+        break;
+      case 'Space':
+        this.reference = this.reference === this.planet ? this.spacecraft : this.planet;
+        break;
+    }
+  }
+
+  onKeyRelease(e) {
+    switch (e.code) {
+      case 'ArrowLeft':
+        if (this.spacecraft.rotateDir < 0) this.spacecraft.rotateDir = 0;
+        break;
+      case 'ArrowRight':
+        if (this.spacecraft.rotateDir > 0) this.spacecraft.rotateDir = 0;
+        break;
     }
   }
 
@@ -154,6 +200,6 @@ export class OrbitGame {
     this.showCrashed = true;
     setTimeout(() => {
       this.switchScene(new GameOver(this.canvas, this.ctx, this.switchScene));
-    }, 4000);
+    }, 2000);
   }
 }
