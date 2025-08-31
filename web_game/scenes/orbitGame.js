@@ -129,14 +129,12 @@ export class OrbitGame {
     ctx.fillText(`Reference: ${this.reference.name}`, xOffset, yOffset);
     yOffset += lineHeight;
     ctx.fillText(`Level: ${this.level}`, xOffset, yOffset);
-    yOffset += lineHeight;
-    ctx.fillText(`Throttle: ${(this.spacecraft.throttle*100).toFixed(0)}%`, xOffset, yOffset);
     ctx.restore();
 
     // Instructions
     ctx.fillStyle = 'white';
     ctx.font = '16px Courier New';
-    ctx.fillText('Arrows steer/throttle, +/- zoom, Space focus, T help, ESC quit', xOffset, canvas.height - yOffset);
+    ctx.fillText('Arrow keys to fly. T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
 
     if (this.showCrashed) {
       ctx.font = '40px Courier New';
@@ -154,10 +152,7 @@ export class OrbitGame {
         this.spacecraft.rotateDir = 1;
         break;
       case 'ArrowUp':
-        this.spacecraft.changeThrottle(0.1);
-        break;
-      case 'ArrowDown':
-        this.spacecraft.changeThrottle(-0.1);
+        this.spacecraft.thrusting = true;
         break;
       case 'KeyT':
         this.paused = true;
@@ -173,15 +168,6 @@ export class OrbitGame {
       case 'NumpadSubtract':
         this.timeFactor = Math.max(0.1, this.timeFactor / 1.1);
         break;
-      case 'Equal':
-        this.reference.scaleFactor *= 1.2;
-        break;
-      case 'Minus':
-        this.reference.scaleFactor /= 1.2;
-        break;
-      case 'Space':
-        this.reference = this.reference === this.planet ? this.spacecraft : this.planet;
-        break;
     }
   }
 
@@ -192,6 +178,9 @@ export class OrbitGame {
         break;
       case 'ArrowRight':
         if (this.spacecraft.rotateDir > 0) this.spacecraft.rotateDir = 0;
+        break;
+      case 'ArrowUp':
+        this.spacecraft.thrusting = false;
         break;
     }
   }

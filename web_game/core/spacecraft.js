@@ -6,8 +6,8 @@ export class Spacecraft extends Body {
     this.image = new Image();
     this.image.src = imageSrc;
     this.size = 20; // pixel size when drawn
-    this.maxThrust = 45000; // Newtons at 100% throttle
-    this.throttle = 0; // 0..1
+    this.maxThrust = 45000; // Newtons
+    this.thrusting = false;
     this.rotateDir = 0; // -1,0,1
     this.turnRate = Math.PI / 2; // rad/s
   }
@@ -19,17 +19,12 @@ export class Spacecraft extends Body {
     // thrust force in spacecraft frame
     let Fx = 0;
     let Fy = 0;
-    if (this.throttle > 0 && this.mass > 0) {
-      const thrust = this.maxThrust * this.throttle;
-      Fx = thrust * Math.sin(this.alpha);
-      Fy = thrust * Math.cos(this.alpha);
+    if (this.thrusting && this.mass > 0) {
+      Fx = this.maxThrust * Math.sin(this.alpha);
+      Fy = this.maxThrust * Math.cos(this.alpha);
     }
 
     super.updatePhysics(dt, Fx, Fy);
-  }
-
-  changeThrottle(delta) {
-    this.throttle = Math.max(0, Math.min(1, this.throttle + delta));
   }
 
   draw(ctx) {
@@ -42,16 +37,6 @@ export class Spacecraft extends Body {
     } else {
       ctx.fillStyle = 'white';
       ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-    }
-
-    // Simple flame
-    if (this.throttle > 0) {
-      ctx.fillStyle = 'orange';
-      ctx.beginPath();
-      ctx.moveTo(-this.size * 0.2, this.size / 2);
-      ctx.lineTo(0, this.size / 2 + this.size * 0.5 * this.throttle);
-      ctx.lineTo(this.size * 0.2, this.size / 2);
-      ctx.fill();
     }
     ctx.restore();
   }
