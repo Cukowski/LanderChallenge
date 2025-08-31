@@ -22,22 +22,23 @@ function switchScene(newScene) {
   currentScene = newScene;
 }
 
-let lastFrameTime = performance.now();
+let lastTime = performance.now();
+let fpsTime = lastTime;
 let frames = 0;
 let fps = 0;
 
 function gameLoop() {
   const now = performance.now();
   frames++;
-  if (now - lastFrameTime >= 1000) {
+  if (now - fpsTime >= 1000) {
     fps = frames;
     frames = 0;
-    lastFrameTime = now;
+    fpsTime = now;
     console.log("FPS:", fps);
   }
 
-  const deltaTime = (now - lastFrameTime) / 1000; // convert to seconds
-  lastFrameTime = now;
+  const deltaTime = (now - lastTime) / 1000; // convert to seconds
+  lastTime = now;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -49,6 +50,10 @@ function gameLoop() {
 
 document.addEventListener("keydown", (e) => {
   currentScene.onKeyPress?.(e);
+});
+
+document.addEventListener("keyup", (e) => {
+  currentScene.onKeyRelease?.(e);
 });
 
 gameLoop();
