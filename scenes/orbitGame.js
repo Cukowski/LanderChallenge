@@ -2,6 +2,7 @@ import { GameOver } from './gameOver.js';
 import { TutorialView } from './tutorial.js';
 import { Body } from '../core/body.js';
 import { Spacecraft } from '../core/spacecraft.js';
+import { Mountain } from '../core/mountain.js';
 
 export class OrbitGame {
   constructor(canvas, ctx, switchScene, level = 1) {
@@ -40,12 +41,24 @@ export class OrbitGame {
     this.planet.scaleFactor = 0.25 * Math.min(canvas.width, canvas.height) / this.planet.radius;
     this.reference = this.planet;
 
+    // Random mountains on the lunar surface
+    const Hmin = 100;
+    const Hmax = 6000;
+    for (let i = 0; i < 100; i++) {
+      const H = Hmin + Math.random() * (Hmax - Hmin);
+      const W = H + Math.random() * 2 * H;
+      const M = 0.25 * W + Math.random() * 0.5 * W;
+      const theta = Math.random() * Math.PI * 2;
+      new Mountain(this.planet, H, W, M, theta);
+    }
+
     // Spacecraft
     this.spacecraft = new Spacecraft('assets/craft_01.png', this);
     this.spacecraft.mass = 15000;
     this.spacecraft.y = this.planet.radius + 300000; // 300 km altitude
     this.spacecraft.u = Math.sqrt(Body.G * this.planet.mass / this.spacecraft.y);
     this.spacecraft.color = 'white';
+    this.cameraTarget = this.spacecraft;
 
     // Level setup placeholders
     if (this.level === 2) this.setLevel2();
@@ -148,7 +161,7 @@ export class OrbitGame {
     // Instructions
     ctx.fillStyle = 'white';
     ctx.font = '16px Courier New';
-    ctx.fillText('Arrow keys to fly. +/- or wheel to zoom. T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
+    ctx.fillText('Arrow keys to fly. +/- or wheel to zoom. SPACE to focus. T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
 
     if (this.showCrashed) {
       ctx.font = '40px Courier New';
@@ -174,6 +187,9 @@ export class OrbitGame {
       case 'KeyT':
         this.paused = true;
         this.switchScene(new TutorialView(this.canvas, this.ctx, this.switchScene, this));
+        break;
+      case 'Space':
+        this.cameraTarget = this.cameraTarget === this.spacecraft ? this.planet : this.spacecraft;
         break;
       case 'Escape':
         this.gameRunning = false;

@@ -48,8 +48,9 @@ export class Body {
   screenPosition() {
     // convert world coordinates to screen space relative to reference body
     const ref = this.game.reference;
-    const dx = this.x - ref.x;
-    const dy = this.y - ref.y;
+    const target = this.game.cameraTarget || ref;
+    const dx = this.x - target.x;
+    const dy = this.y - target.y;
     const cos = Math.cos(-ref.alpha);
     const sin = Math.sin(-ref.alpha);
     const rx = dx * cos - dy * sin;
@@ -70,6 +71,12 @@ export class Body {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+
+    if (this.featureList) {
+      for (const feature of this.featureList) {
+        feature.draw(ctx);
+      }
+    }
   }
 }
 

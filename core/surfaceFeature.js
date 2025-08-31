@@ -12,14 +12,15 @@ export class SurfaceFeature {
     // very simple projection of points to screen space
     if (!this.points.length) return;
     const ref = this.planet.game.reference;
+    const target = this.planet.game.cameraTarget || ref;
     const scale = this.planet.game.scaleFactor();
     const pts = [];
     const alpha = this.planet.alpha + this.theta;
     for (const [px, py] of this.points) {
       const x1 = px * Math.cos(alpha) - (py + this.planet.radius) * Math.sin(alpha);
       const y1 = px * Math.sin(alpha) + (py + this.planet.radius) * Math.cos(alpha);
-      const dx = x1 + this.planet.x - ref.x;
-      const dy = y1 + this.planet.y - ref.y;
+      const dx = x1 + this.planet.x - target.x;
+      const dy = y1 + this.planet.y - target.y;
       const cos = Math.cos(-ref.alpha);
       const sin = Math.sin(-ref.alpha);
       const rx = dx * cos - dy * sin;
