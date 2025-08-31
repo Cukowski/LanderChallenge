@@ -19,6 +19,7 @@ enGits Lander Challenge
 - -: zoom out
 - shift +: increase simulation speed
 - shift -: descrease simulation speed
+- mouse wheel: zoom in/out
 
 ## Other keys
 - space-bar: cycle through reference objects
