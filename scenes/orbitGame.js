@@ -50,6 +50,13 @@ export class OrbitGame {
     // Level setup placeholders
     if (this.level === 2) this.setLevel2();
     if (this.level === 3) this.setLevel3();
+
+    this.handleWheel = (e) => {
+      e.preventDefault();
+      const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+      this.zoom(zoom);
+    };
+    canvas.addEventListener('wheel', this.handleWheel);
   }
 
   scaleFactor() {
@@ -58,6 +65,11 @@ export class OrbitGame {
 
   setLevel2() {}
   setLevel3() {}
+
+  zoom(factor) {
+    this.reference.scaleFactor *= factor;
+    this.reference.scaleFactor = Math.max(1e-7, Math.min(1, this.reference.scaleFactor));
+  }
 
   update(deltaTime) {
     if (this.paused || !this.gameRunning) return;
@@ -129,12 +141,14 @@ export class OrbitGame {
     ctx.fillText(`Reference: ${this.reference.name}`, xOffset, yOffset);
     yOffset += lineHeight;
     ctx.fillText(`Level: ${this.level}`, xOffset, yOffset);
+    yOffset += lineHeight;
+    ctx.fillText(`Thrust: ${(this.spacecraft.throttle * 100).toFixed(1)}%`, xOffset, yOffset);
     ctx.restore();
 
     // Instructions
     ctx.fillStyle = 'white';
     ctx.font = '16px Courier New';
-    ctx.fillText('Arrow keys to fly. T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
+    ctx.fillText('Arrow keys to fly. +/- or wheel to zoom. T for Tutorial, ESC to Quit', xOffset, canvas.height - yOffset);
 
     if (this.showCrashed) {
       ctx.font = '40px Courier New';
@@ -152,7 +166,10 @@ export class OrbitGame {
         this.spacecraft.rotateDir = 1;
         break;
       case 'ArrowUp':
-        this.spacecraft.thrusting = true;
+        this.spacecraft.adjustThrust(e.shiftKey ? 0.1 : 0.01);
+        break;
+      case 'ArrowDown':
+        this.spacecraft.adjustThrust(e.shiftKey ? -0.1 : -0.01);
         break;
       case 'KeyT':
         this.paused = true;
@@ -162,11 +179,15 @@ export class OrbitGame {
         this.gameRunning = false;
         this.triggerGameOver();
         break;
+      case 'Equal':
       case 'NumpadAdd':
-        this.timeFactor *= 1.1;
+        if (e.shiftKey) this.timeFactor *= 1.1;
+        else this.zoom(1.1);
         break;
+      case 'Minus':
       case 'NumpadSubtract':
-        this.timeFactor = Math.max(0.1, this.timeFactor / 1.1);
+        if (e.shiftKey) this.timeFactor = Math.max(0.1, this.timeFactor / 1.1);
+        else this.zoom(1 / 1.1);
         break;
     }
   }
@@ -178,9 +199,6 @@ export class OrbitGame {
         break;
       case 'ArrowRight':
         if (this.spacecraft.rotateDir > 0) this.spacecraft.rotateDir = 0;
-        break;
-      case 'ArrowUp':
-        this.spacecraft.thrusting = false;
         break;
     }
   }
